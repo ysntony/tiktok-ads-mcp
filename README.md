@@ -25,7 +25,7 @@ A comprehensive Model Context Protocol (MCP) server for interacting with the Tik
 
 ## Prerequisites
 
-- Python 3.14.0 or higher
+- Python 3.10 or higher
 - TikTok Business API access
 - Valid API credentials (app ID, secret, access token)
 
@@ -47,6 +47,8 @@ A comprehensive Model Context Protocol (MCP) server for interacting with the Tik
    ```bash
    cd tiktok-ads-mcp
    pip install -e .
+   # or with uv
+   uv pip install -e .
    ```
 
 
@@ -135,13 +137,12 @@ All tools support comprehensive filtering options:
 - Creative filtering (ad formats, material types)
 
 ### Modern Implementation
-This package uses the official FastMCP framework for optimal performance and developer experience:
+This package uses the FastMCP framework for optimal performance and developer experience:
 
 - **Automatic Schema Generation**: From Python type hints
 - **Simplified Tool Registration**: Using `@app.tool()` decorators
 - **Built-in Error Handling**: Consistent error responses
 - **Type Safety**: Full parameter validation from type hints
-- **Future-Proof**: Part of the official MCP SDK
 
 ### Multi-Advertiser Support
 - Handle multiple advertiser accounts in single requests
@@ -188,7 +189,15 @@ For issues and questions:
 
 ## Changelog
 
-### v0.1.3 (Current)
+### v0.1.4 (Current)
+- **Retry Logic Fix**: Fixed retry decorator being defeated by inner exception handling — retries now actually fire on rate limits and transient errors
+- **Pagination Fix**: `page` and `page_size` params now properly passed through to `get_ad_groups` and `get_ads` API calls
+- **Security**: Access token redacted from debug log output
+- **Dependencies**: Removed unused `requests` and `pandas`, bumped `mcp` to `>=1.27.0`, added `httpx` and `tenacity` to requirements.txt
+- **Code Quality**: Modernized type annotations to Python 3.10+ style, removed dead code and redundant error checks, fixed mutable default dict mutation in filter handling
+- **Python Compatibility**: Lowered minimum Python version to 3.10
+
+### v0.1.3
 - **Async Support**: Complete refactor to use `async/await` with `httpx` for improved performance
 - **Retry Logic**: Added automatic retries for rate limits and server errors using `tenacity`
 - **Error Handling**: Simplified and standardized error handling with decorators
