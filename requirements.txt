@@ -1,9 +1,9 @@
 # Core dependencies for TikTok Ads MCP Server
-requests>=2.32.3
 python-dotenv>=1.0.0
 
 # MCP (Model Context Protocol) server
-mcp>=1.9.0
+mcp>=1.27.0
 
-# Data handling (lightweight)
-pandas>=2.2.0
+# HTTP client & retry
+httpx>=0.27.0
+tenacity>=8.2.0

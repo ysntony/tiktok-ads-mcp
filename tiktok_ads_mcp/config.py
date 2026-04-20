@@ -1,7 +1,6 @@
 """Configuration management for TikTok Ads MCP Server"""
 
 import os
-from typing import Dict, Any, List
 
 class TikTokConfig:
     """Configuration class for TikTok Business API"""
@@ -27,7 +26,7 @@ class TikTokConfig:
         return all(field.strip() for field in required_fields)
     
     @classmethod
-    def get_missing_credentials(cls) -> List[str]:
+    def get_missing_credentials(cls) -> list[str]:
         """Get list of missing credential fields"""
         missing = []
         if not cls.APP_ID.strip():
@@ -37,17 +36,6 @@ class TikTokConfig:
         if not cls.ACCESS_TOKEN.strip():
             missing.append("TIKTOK_ACCESS_TOKEN")
         return missing
-    
-
-    
-    @classmethod
-    def get_health_info(cls) -> Dict[str, Any]:
-        """Get system health information"""
-        return {
-            "config_valid": cls.validate_credentials(),
-            "base_url": cls.BASE_URL,
-            "api_version": cls.API_VERSION
-        }
 
 # Global config instance
 config = TikTokConfig() 

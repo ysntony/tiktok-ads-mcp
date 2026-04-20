@@ -8,7 +8,6 @@ This provides a clean, efficient interface to the TikTok Ads API with automatic 
 import json
 import logging
 import functools
-from typing import Any, Dict, List, Optional, Union
 
 # MCP imports
 from mcp.server import FastMCP
@@ -30,7 +29,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global client instance (will be initialized on first use)
-tiktok_client: Optional[TikTokAdsClient] = None
+tiktok_client: TikTokAdsClient | None = None
 
 # Create MCP server instance
 app = FastMCP("tiktok-ads")
@@ -68,9 +67,6 @@ def handle_errors(func):
 async def get_business_centers_tool(bc_id: str = "", page: int = 1, page_size: int = 10) -> str:
     """Get business centers accessible by the current access token"""
     client = get_tiktok_client()
-    # Note: tools need to be updated to be async or we wrap them here if they are synchronous but use async client
-    # Since we updated client to be async, the tools calling client._make_request must be awaited.
-    # We will assume tools are updated to be async or return awaitables.
     centers = await get_business_centers(client, bc_id=bc_id, page=page, page_size=page_size)
     
     return json.dumps({
@@ -81,7 +77,7 @@ async def get_business_centers_tool(bc_id: str = "", page: int = 1, page_size: i
 
 @app.tool()
 @handle_errors
-async def get_authorized_ad_accounts_tool(random_string: str = "") -> str:
+async def get_authorized_ad_accounts_tool() -> str:
     """Get all authorized ad accounts accessible by the current access token"""
     client = get_tiktok_client()
     advertisers = await get_authorized_ad_accounts(client)
@@ -94,7 +90,7 @@ async def get_authorized_ad_accounts_tool(random_string: str = "") -> str:
 
 @app.tool()
 @handle_errors
-async def get_campaigns_tool(advertiser_id: str, filters: Dict = None) -> str:
+async def get_campaigns_tool(advertiser_id: str, filters: dict | None = None) -> str:
     """Get campaigns for a specific advertiser with optional filtering"""
     if not advertiser_id:
         raise ValueError("advertiser_id is required")
@@ -112,18 +108,18 @@ async def get_campaigns_tool(advertiser_id: str, filters: Dict = None) -> str:
 @app.tool()
 @handle_errors
 async def get_ad_groups_tool(
-    advertiser_id: str, 
-    campaign_id: Optional[str] = None, 
-    filters: Dict = None, 
-    page: int = 1, 
+    advertiser_id: str,
+    campaign_id: str | None = None,
+    filters: dict | None = None,
+    page: int = 1,
     page_size: int = 10
 ) -> str:
     """Get ad groups for a specific advertiser with optional filtering"""
     if not advertiser_id:
         raise ValueError("advertiser_id is required")
-    
+
     client = get_tiktok_client()
-    ad_groups = await get_ad_groups(client, advertiser_id=advertiser_id, campaign_id=campaign_id, filters=filters or {})
+    ad_groups = await get_ad_groups(client, advertiser_id=advertiser_id, campaign_id=campaign_id, filters=filters or {}, page=page, page_size=page_size)
     
     return json.dumps({
         "success": True,
@@ -136,18 +132,18 @@ async def get_ad_groups_tool(
 @app.tool()
 @handle_errors
 async def get_ads_tool(
-    advertiser_id: str, 
-    adgroup_id: Optional[str] = None, 
-    filters: Dict = None, 
-    page: int = 1, 
+    advertiser_id: str,
+    adgroup_id: str | None = None,
+    filters: dict | None = None,
+    page: int = 1,
     page_size: int = 10
 ) -> str:
     """Get ads for a specific advertiser with optional filtering"""
     if not advertiser_id:
         raise ValueError("advertiser_id is required")
-    
+
     client = get_tiktok_client()
-    ads = await get_ads(client, advertiser_id=advertiser_id, adgroup_id=adgroup_id, filters=filters or {})
+    ads = await get_ads(client, advertiser_id=advertiser_id, adgroup_id=adgroup_id, filters=filters or {}, page=page, page_size=page_size)
     
     return json.dumps({
         "success": True,
@@ -160,23 +156,23 @@ async def get_ads_tool(
 @app.tool()
 @handle_errors
 async def get_reports_tool(
-    advertiser_id: Optional[str] = None,
-    advertiser_ids: Optional[List[str]] = None,
-    bc_id: Optional[str] = None,
+    advertiser_id: str | None = None,
+    advertiser_ids: list[str] | None = None,
+    bc_id: str | None = None,
     report_type: str = "BASIC",
     data_level: str = "AUCTION_CAMPAIGN",
-    dimensions: Optional[List[str]] = None,
-    metrics: Optional[List[str]] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    filters: Optional[List[Dict]] = None,
+    dimensions: list[str] | None = None,
+    metrics: list[str] | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    filters: list[dict] | None = None,
     page: int = 1,
     page_size: int = 10,
     service_type: str = "AUCTION",
     query_lifetime: bool = False,
     enable_total_metrics: bool = False,
     multi_adv_report_in_utc_time: bool = False,
-    order_field: Optional[str] = None,
+    order_field: str | None = None,
     order_type: str = "DESC"
 ) -> str:
     """Get performance reports and analytics with comprehensive filtering and grouping options"""

@@ -2,18 +2,18 @@
 
 import json
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-async def get_reports(client, advertiser_id: str = None, advertiser_ids: List[str] = None, bc_id: str = None,
-                report_type: str = "BASIC", data_level: str = "AUCTION_CAMPAIGN", 
-                dimensions: List[str] = None, metrics: List[str] = None,
-                start_date: str = None, end_date: str = None, 
-                filters: List[Dict] = None, page: int = 1, page_size: int = 10,
+async def get_reports(client, advertiser_id: str | None = None, advertiser_ids: list[str] | None = None, bc_id: str | None = None,
+                report_type: str = "BASIC", data_level: str = "AUCTION_CAMPAIGN",
+                dimensions: list[str] | None = None, metrics: list[str] | None = None,
+                start_date: str | None = None, end_date: str | None = None,
+                filters: list[dict] | None = None, page: int = 1, page_size: int = 10,
                 service_type: str = "AUCTION", query_lifetime: bool = False,
                 enable_total_metrics: bool = False, multi_adv_report_in_utc_time: bool = False,
-                order_field: str = None, order_type: str = "DESC", **kwargs) -> Dict[str, Any]:
+                order_field: str | None = None, order_type: str = "DESC", **kwargs) -> dict[str, Any]:
     """Get performance reports and analytics"""
     
     # Validate required parameters based on report_type
@@ -89,33 +89,19 @@ async def get_reports(client, advertiser_id: str = None, advertiser_ids: List[st
     if order_type:
         params['order_type'] = order_type
     
-    try:
-        response = await client._make_request('GET', 'report/integrated/get/', params)
-        
-        if response.get('code') == 0:
-            data = response.get('data', {})
-            
-            # Process the report data
-            report_data = {
-                "report_type": report_type,
-                "data_level": data_level if report_type != "BC" else None,
-                "total_metrics": data.get("total_metrics"),
-                "page_info": data.get("page_info", {}),
-                "list": []
+    response = await client._make_request('GET', 'report/integrated/get/', params)
+    data = response.get('data', {})
+
+    return {
+        "report_type": report_type,
+        "data_level": data_level if report_type != "BC" else None,
+        "total_metrics": data.get("total_metrics"),
+        "page_info": data.get("page_info", {}),
+        "list": [
+            {
+                "dimensions": item.get("dimensions", {}),
+                "metrics": item.get("metrics", {})
             }
-            
-            # Process each report item
-            for item in data.get("list", []):
-                processed_item = {
-                    "dimensions": item.get("dimensions", {}),
-                    "metrics": item.get("metrics", {})
-                }
-                report_data["list"].append(processed_item)
-            
-            return report_data
-        else:
-            raise Exception(f"API returned code {response.get('code')}: {response.get('message', 'Unknown error')}")
-            
-    except Exception as e:
-        logger.error(f"Failed to get reports: {e}")
-        raise 
+            for item in data.get("list", [])
+        ]
+    }
