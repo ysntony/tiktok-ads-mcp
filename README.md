@@ -1,3 +1,5 @@
+
+
 # TikTok Ads MCP
 
 A comprehensive Model Context Protocol (MCP) server for interacting with the TikTok Business API. This package provides a complete interface to access TikTok advertising campaigns, ad groups, ads, and generate detailed performance reports.
@@ -65,7 +67,8 @@ A comprehensive Model Context Protocol (MCP) server for interacting with the Tik
       "env": {
         "TIKTOK_APP_ID": "your_app_id",
         "TIKTOK_SECRET": "your_secret",
-        "TIKTOK_ACCESS_TOKEN": "your_access_token"
+        "TIKTOK_ACCESS_TOKEN": "your_access_token",
+        "TIKTOK_ADVERTISER_ID": "your_advertiser_id"
       }
     }
   }
@@ -76,6 +79,7 @@ A comprehensive Model Context Protocol (MCP) server for interacting with the Tik
    - `TIKTOK_APP_ID`: Your TikTok app ID
    - `TIKTOK_SECRET`: Your TikTok app secret
    - `TIKTOK_ACCESS_TOKEN`: Your access token
+   - `TIKTOK_ADVERTISER_ID`: Your advertiser ID (optional)
 
    **How to get these credentials:**
    1. Go to the [TikTok for Business Developers](https://ads.tiktok.com/marketing_api/) portal and log in.
