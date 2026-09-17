@@ -4,9 +4,11 @@ import json
 import logging
 from typing import Any
 
+from ._utils import as_float, preserve_item, with_metadata
+
 logger = logging.getLogger(__name__)
 
-async def get_ads(client, advertiser_id: str, adgroup_id: str | None = None, filters: dict | None = None, page: int = 1, page_size: int = 10, **kwargs) -> list[dict[str, Any]]:
+async def get_ads(client, advertiser_id: str, adgroup_id: str | None = None, filters: dict | None = None, page: int = 1, page_size: int = 10, include_metadata: bool = False, **kwargs) -> list[dict[str, Any]] | dict[str, Any]:
     """Get ads for a specific advertiser with optional filtering"""
     
     if not advertiser_id:
@@ -36,55 +38,24 @@ async def get_ads(client, advertiser_id: str, adgroup_id: str | None = None, fil
         params['filtering'] = json.dumps({'adgroup_ids': [adgroup_id]})
     
     response = await client._make_request('GET', 'ad/get/', params)
-    ads = response.get('data', {}).get('list', [])
+    data = response.get('data', {})
+    ads = data.get('list', [])
 
-    return [
-        {
-            "ad_id": ad.get("ad_id"),
-            "ad_name": ad.get("ad_name", "Unknown"),
-            "adgroup_id": ad.get("adgroup_id"),
-            "adgroup_name": ad.get("adgroup_name", "Unknown"),
-            "campaign_id": ad.get("campaign_id"),
-            "campaign_name": ad.get("campaign_name", "Unknown"),
-            "advertiser_id": ad.get("advertiser_id"),
-            "operation_status": ad.get("operation_status", "Unknown"),
-            "secondary_status": ad.get("secondary_status", "Unknown"),
-            "ad_format": ad.get("ad_format", "Unknown"),
-            "creative_type": ad.get("creative_type"),
-            "ad_text": ad.get("ad_text", ""),
-            "ad_texts": ad.get("ad_texts"),
-            "call_to_action": ad.get("call_to_action", ""),
-            "call_to_action_id": ad.get("call_to_action_id"),
-            "landing_page_url": ad.get("landing_page_url", ""),
-            "landing_page_urls": ad.get("landing_page_urls"),
-            "deeplink": ad.get("deeplink", ""),
-            "deeplink_type": ad.get("deeplink_type", "Unknown"),
-            "video_id": ad.get("video_id"),
-            "image_ids": ad.get("image_ids", []),
-            "playable_url": ad.get("playable_url", ""),
-            "profile_image_url": ad.get("profile_image_url", ""),
-            "avatar_icon_web_uri": ad.get("avatar_icon_web_uri", ""),
-            "display_name": ad.get("display_name", ""),
-            "identity_type": ad.get("identity_type", "Unknown"),
-            "identity_id": ad.get("identity_id"),
-            "app_name": ad.get("app_name", ""),
-            "page_id": ad.get("page_id"),
-            "card_id": ad.get("card_id"),
-            "optimization_event": ad.get("optimization_event"),
-            "tracking_pixel_id": ad.get("tracking_pixel_id", 0),
-            "click_tracking_url": ad.get("click_tracking_url"),
-            "impression_tracking_url": ad.get("impression_tracking_url"),
-            "viewability_vast_url": ad.get("viewability_vast_url"),
-            "brand_safety_vast_url": ad.get("brand_safety_vast_url"),
-            "brand_safety_postbid_partner": ad.get("brand_safety_postbid_partner", "Unknown"),
-            "viewability_postbid_partner": ad.get("viewability_postbid_partner", "Unknown"),
-            "fallback_type": ad.get("fallback_type", "Unknown"),
-            "is_aco": ad.get("is_aco", False),
-            "is_new_structure": ad.get("is_new_structure", False),
-            "creative_authorized": ad.get("creative_authorized", False),
-            "vast_moat_enabled": ad.get("vast_moat_enabled", False),
-            "create_time": ad.get("create_time"),
-            "modify_time": ad.get("modify_time")
-        }
-        for ad in ads
-    ]
+    normalized = []
+    for ad in ads:
+        item = preserve_item(ad)
+        for field, default in {
+            "ad_name": "Unknown", "adgroup_name": "Unknown", "campaign_name": "Unknown",
+            "operation_status": "Unknown", "secondary_status": "Unknown", "ad_format": "Unknown",
+            "ad_text": "", "call_to_action": "", "landing_page_url": "", "deeplink": "",
+            "deeplink_type": "Unknown", "image_ids": [], "playable_url": "", "profile_image_url": "",
+            "avatar_icon_web_uri": "", "display_name": "", "identity_type": "Unknown", "app_name": "",
+            "brand_safety_postbid_partner": "Unknown", "viewability_postbid_partner": "Unknown",
+            "fallback_type": "Unknown", "is_aco": False, "is_new_structure": False,
+            "creative_authorized": False, "vast_moat_enabled": False,
+        }.items():
+            item.setdefault(field, default)
+        if "tracking_pixel_id" not in item:
+            item["tracking_pixel_id"] = 0
+        normalized.append(item)
+    return with_metadata(normalized, data, include_metadata)

@@ -67,11 +67,13 @@ def handle_errors(func):
 async def get_business_centers_tool(bc_id: str = "", page: int = 1, page_size: int = 10) -> str:
     """Get business centers accessible by the current access token"""
     client = get_tiktok_client()
-    centers = await get_business_centers(client, bc_id=bc_id, page=page, page_size=page_size)
+    result = await get_business_centers(client, bc_id=bc_id, page=page, page_size=page_size, include_metadata=True)
+    centers = result["list"]
     
     return json.dumps({
         "success": True,
         "count": len(centers),
+        "page_info": result.get("page_info", {}),
         "centers": centers
     }, indent=2)
 
@@ -90,18 +92,27 @@ async def get_authorized_ad_accounts_tool() -> str:
 
 @app.tool()
 @handle_errors
-async def get_campaigns_tool(advertiser_id: str, filters: dict | None = None) -> str:
+async def get_campaigns_tool(advertiser_id: str, filters: dict | None = None, page: int = 1, page_size: int = 10) -> str:
     """Get campaigns for a specific advertiser with optional filtering"""
     if not advertiser_id:
         raise ValueError("advertiser_id is required")
     
     client = get_tiktok_client()
-    campaigns = await get_campaigns(client, advertiser_id=advertiser_id, filters=filters or {})
+    result = await get_campaigns(
+        client,
+        advertiser_id=advertiser_id,
+        filters=filters or {},
+        page=page,
+        page_size=page_size,
+        include_metadata=True,
+    )
+    campaigns = result["list"]
     
     return json.dumps({
         "success": True,
         "advertiser_id": advertiser_id,
         "count": len(campaigns),
+        "page_info": result.get("page_info", {}),
         "campaigns": campaigns
     }, indent=2)
 
@@ -119,13 +130,15 @@ async def get_ad_groups_tool(
         raise ValueError("advertiser_id is required")
 
     client = get_tiktok_client()
-    ad_groups = await get_ad_groups(client, advertiser_id=advertiser_id, campaign_id=campaign_id, filters=filters or {}, page=page, page_size=page_size)
+    result = await get_ad_groups(client, advertiser_id=advertiser_id, campaign_id=campaign_id, filters=filters or {}, page=page, page_size=page_size, include_metadata=True)
+    ad_groups = result["list"]
     
     return json.dumps({
         "success": True,
         "advertiser_id": advertiser_id,
         "campaign_id": campaign_id,
         "count": len(ad_groups),
+        "page_info": result.get("page_info", {}),
         "ad_groups": ad_groups
     }, indent=2)
 
@@ -143,13 +156,15 @@ async def get_ads_tool(
         raise ValueError("advertiser_id is required")
 
     client = get_tiktok_client()
-    ads = await get_ads(client, advertiser_id=advertiser_id, adgroup_id=adgroup_id, filters=filters or {}, page=page, page_size=page_size)
+    result = await get_ads(client, advertiser_id=advertiser_id, adgroup_id=adgroup_id, filters=filters or {}, page=page, page_size=page_size, include_metadata=True)
+    ads = result["list"]
     
     return json.dumps({
         "success": True,
         "advertiser_id": advertiser_id,
         "adgroup_id": adgroup_id,
         "count": len(ads),
+        "page_info": result.get("page_info", {}),
         "ads": ads
     }, indent=2)
 
@@ -185,7 +200,7 @@ async def get_reports_tool(
         bc_id=bc_id,
         report_type=report_type,
         data_level=data_level,
-        dimensions=dimensions or ["campaign_id", "stat_time_day"],
+        dimensions=dimensions or (["campaign_id", "stat_time_day"] if report_type == "BASIC" else None),
         metrics=metrics or ["spend", "impressions"],
         start_date=start_date,
         end_date=end_date,
@@ -203,7 +218,7 @@ async def get_reports_tool(
     return json.dumps({
         "success": True,
         "report_type": report_type,
-        "data_level": data_level,
+        "data_level": reports.get("data_level"),
         "total_metrics": reports.get("total_metrics"),
         "page_info": reports.get("page_info", {}),
         "count": len(reports.get("list", [])),

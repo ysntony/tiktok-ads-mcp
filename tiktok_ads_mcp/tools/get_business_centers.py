@@ -3,9 +3,11 @@
 import logging
 from typing import Any
 
+from ._utils import preserve_item, with_metadata
+
 logger = logging.getLogger(__name__)
 
-async def get_business_centers(client, bc_id: str | None = None, page: int = 1, page_size: int = 10, **kwargs) -> list[dict[str, Any]]:
+async def get_business_centers(client, bc_id: str | None = None, page: int = 1, page_size: int = 10, include_metadata: bool = False, **kwargs) -> list[dict[str, Any]] | dict[str, Any]:
     """Get business centers accessible by the current access token"""
     
     # Validate parameters
@@ -25,21 +27,16 @@ async def get_business_centers(client, bc_id: str | None = None, page: int = 1, 
         params['bc_id'] = bc_id
     
     response = await client._make_request('GET', 'bc/get/', params)
-    business_centers = response.get('data', {}).get('list', [])
+    data = response.get('data', {})
+    business_centers = data.get('list', [])
 
-    return [
-        {
-            "bc_id": bc.get("bc_id"),
-            "name": bc.get("name", "Unknown"),
-            "company": bc.get("company", ""),
-            "currency": bc.get("currency", ""),
-            "registered_area": bc.get("registered_area", ""),
-            "status": bc.get("status", "Unknown"),
-            "timezone": bc.get("timezone", ""),
-            "type": bc.get("type", "Unknown"),
-            "user_role": bc.get("user_role", "Unknown"),
-            "finance_role": bc.get("finance_role"),
-            "ext_user_role": bc.get("ext_user_role")
-        }
-        for bc in business_centers
-    ]
+    normalized = []
+    for center in business_centers:
+        item = preserve_item(center)
+        for field, default in {
+            "name": "Unknown", "company": "", "currency": "", "registered_area": "",
+            "status": "Unknown", "timezone": "", "type": "Unknown", "user_role": "Unknown",
+        }.items():
+            item.setdefault(field, default)
+        normalized.append(item)
+    return with_metadata(normalized, data, include_metadata)

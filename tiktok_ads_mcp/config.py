@@ -2,6 +2,10 @@
 
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class TikTokConfig:
     """Configuration class for TikTok Business API"""
     
@@ -38,4 +42,4 @@ class TikTokConfig:
         return missing
 
 # Global config instance
-config = TikTokConfig() 
+config = TikTokConfig()

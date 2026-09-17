@@ -5,12 +5,39 @@ import json
 import logging
 from typing import Any
 from urllib.parse import urlencode
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from .config import config
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+
+class TikTokAPIError(Exception):
+    """An error returned in a successful HTTP response by TikTok."""
+
+    def __init__(self, code: Any, message: str):
+        self.code = code
+        self.message = message
+        super().__init__(f"TikTok API error {code}: {message}")
+
+
+def _is_retryable_exception(exc: BaseException) -> bool:
+    """Retry transport failures and transient API errors, not validation errors."""
+    if isinstance(exc, httpx.RequestError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        return status == 429 or status >= 500
+    if isinstance(exc, TikTokAPIError):
+        message = exc.message.lower()
+        return any(term in message for term in ("rate limit", "too many", "timeout", "temporar", "unavailable"))
+    return False
 
 class TikTokAdsClient:
     """TikTok Business API client for campaign operations."""
@@ -37,7 +64,7 @@ class TikTokAdsClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((httpx.RequestError, httpx.HTTPStatusError)),
+        retry=retry_if_exception(_is_retryable_exception),
         reraise=True
     )
     async def _make_request(self, method: str, endpoint: str, params: dict | None = None,
@@ -45,8 +72,7 @@ class TikTokAdsClient:
         """Make HTTP request to TikTok API with proper authentication handling"""
         
         # Prepare parameters
-        if params is None:
-            params = {}
+        params = dict(params or {})
         
         # Add app_id and secret ONLY for oauth2 endpoints
         if 'oauth2' in endpoint:
@@ -69,8 +95,11 @@ class TikTokAdsClient:
         }
         
         safe_headers = {k: ('***REDACTED***' if k == 'Access-Token' else v) for k, v in headers.items()}
-        logger.debug(f"Making {method} request to {url}")
-        logger.debug(f"Parameters: {params}")
+        safe_params = dict(params)
+        if 'oauth2' in endpoint and 'secret' in safe_params:
+            safe_params['secret'] = '***REDACTED***'
+        logger.debug("Making %s request to %s", method, f"{self.base_url}/{self.api_version}/{endpoint}")
+        logger.debug("Parameters: %s", safe_params)
         logger.debug(f"Headers: {safe_headers}")
 
         async with httpx.AsyncClient(timeout=self.request_timeout) as client:
@@ -97,6 +126,6 @@ class TikTokAdsClient:
 
             if result.get('code') != 0:
                 error_msg = result.get('message', 'Unknown API error')
-                raise Exception(f"TikTok API error {result.get('code')}: {error_msg}")
+                raise TikTokAPIError(result.get('code'), error_msg)
 
             return result

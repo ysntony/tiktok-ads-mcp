@@ -35,7 +35,7 @@ pip install -e .
 ```
 
 > [!NOTE]
-> This project requires **Python 3.14.0** or higher. Please ensure your environment is set up correctly.
+> This project requires **Python 3.10** or higher. Please ensure your environment is set up correctly.
 
 ### 2. Configure Cursor MCP
 
@@ -157,7 +157,16 @@ Retrieves campaigns for a specific advertiser with optional filtering.
 **Parameters:**
 - `advertiser_id` (required): TikTok advertiser ID
 - `filters` (optional): Filtering options
-  - `campaign_ids`: List of campaign IDs to filter by
+  - `campaign_ids`: List of campaign IDs to filter by (sent in TikTok's `filtering` object)
+  - `campaign_name`: Fuzzy campaign-name filter
+  - `primary_status`: Primary status filter
+  - `secondary_status`: Secondary status filter
+  - `objective_type`: Advertising objective filter
+  - `campaign_automation_type`: `MANUAL`, `SMART_PLUS`, or `UPGRADED_SMART_PLUS`
+  - `is_smart_performance_campaign`: Whether to return automated campaigns
+  - `creation_filter_start_time` / `creation_filter_end_time`: Creation-time range
+- `page` (optional): Page number (default: 1)
+- `page_size` (optional): Page size 1-1000 (default: 10)
 
 **Example:**
 ```json
@@ -174,6 +183,12 @@ Retrieves campaigns for a specific advertiser with optional filtering.
   "success": true,
   "advertiser_id": "7441431575776520000",
   "count": 2,
+  "page_info": {
+    "page": 1,
+    "page_size": 10,
+    "total_page": 1,
+    "total_number": 2
+  },
   "campaigns": [
     {
       "campaign_id": "123456789",
@@ -322,7 +337,7 @@ Generates comprehensive performance reports and analytics.
   - `PLAYABLE_MATERIAL`: Playable ads reports
   - `CATALOG`: DSA reports
   - `BC`: Business Center reports
-  - `TT_SHOP`: GMV max ads reports
+  - `TT_SHOP`: Deprecated by TikTok; use the dedicated GMV Max report endpoint instead
 - `data_level` (conditional): Data aggregation level
   - `AUCTION_AD`: Ad level
   - `AUCTION_ADGROUP`: Ad group level
@@ -548,6 +563,9 @@ The MCP server provides comprehensive error handling:
 - Use appropriate date ranges (max 30 days for daily data)
 - Enable total metrics for aggregated views
 - Use filters to reduce data volume
+
+> [!WARNING]
+> `TT_SHOP` is rejected by this server because TikTok has marked the legacy GMV Max report as deprecated for the next API version. Migrate GMV Max reporting to `/gmv_max/report/get/` rather than relying on the legacy integrated report.
 
 ### 5. Performance
 - Use specific filters to reduce response size

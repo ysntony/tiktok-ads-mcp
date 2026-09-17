@@ -15,22 +15,45 @@ async def get_reports(client, advertiser_id: str | None = None, advertiser_ids: 
                 enable_total_metrics: bool = False, multi_adv_report_in_utc_time: bool = False,
                 order_field: str | None = None, order_type: str = "DESC", **kwargs) -> dict[str, Any]:
     """Get performance reports and analytics"""
-    
+    supported_report_types = {"BASIC", "AUDIENCE", "PLAYABLE_MATERIAL", "CATALOG", "BC"}
+    if report_type == "TT_SHOP":
+        raise ValueError("TT_SHOP is deprecated by TikTok; use the GMV Max report endpoint instead")
+    if report_type not in supported_report_types:
+        raise ValueError(f"Unsupported report_type: {report_type}")
+
     # Validate required parameters based on report_type
     if report_type == "BC":
         if not bc_id:
             raise ValueError("bc_id is required when report_type is BC")
+        if advertiser_id or advertiser_ids:
+            raise ValueError("advertiser_id and advertiser_ids are not supported for BC reports")
     else:
         if not advertiser_id and not advertiser_ids:
             raise ValueError("advertiser_id or advertiser_ids is required when report_type is not BC")
         if advertiser_id and advertiser_ids:
             logger.warning("Both advertiser_id and advertiser_ids provided, advertiser_id will be ignored")
+        if advertiser_ids and len(advertiser_ids) > 5:
+            raise ValueError("advertiser_ids supports at most 5 advertiser IDs")
+
+    if report_type != "BC" and report_type in {"BASIC", "AUDIENCE", "CATALOG"} and not data_level:
+        raise ValueError("data_level is required for BASIC, AUDIENCE, and CATALOG reports")
+    if report_type == "BC" and service_type != "AUCTION":
+        raise ValueError("service_type is not supported for BC reports")
+    if report_type == "BC" and query_lifetime:
+        raise ValueError("query_lifetime is not supported for BC reports")
+    if query_lifetime and report_type not in {"BASIC", "PLAYABLE_MATERIAL"}:
+        raise ValueError("query_lifetime is only supported for BASIC and PLAYABLE_MATERIAL reports")
+    if multi_adv_report_in_utc_time and not advertiser_ids:
+        raise ValueError("multi_adv_report_in_utc_time requires advertiser_ids")
     
     # Validate pagination parameters
     if page < 1:
         raise ValueError("page must be >= 1")
     if page_size < 1 or page_size > 1000:
         raise ValueError("page_size must be between 1 and 1000")
+
+    if order_type not in {"ASC", "DESC"}:
+        raise ValueError("order_type must be ASC or DESC")
     
     # Validate date parameters
     if not query_lifetime:
@@ -53,11 +76,13 @@ async def get_reports(client, advertiser_id: str | None = None, advertiser_ids: 
         else:
             params['advertiser_id'] = advertiser_id
         params['service_type'] = service_type
-        params['data_level'] = data_level
+        if report_type in {"BASIC", "AUDIENCE", "CATALOG"}:
+            params['data_level'] = data_level
     
     # Add dimensions
-    if dimensions:
-        params['dimensions'] = json.dumps(dimensions)
+    if not dimensions:
+        raise ValueError("dimensions is required by TikTok reporting API")
+    params['dimensions'] = json.dumps(dimensions)
     
     # Add metrics
     if metrics:
@@ -77,6 +102,8 @@ async def get_reports(client, advertiser_id: str | None = None, advertiser_ids: 
         params['filtering'] = json.dumps(filters)
     
     # Add optional parameters
+    if enable_total_metrics and report_type != "BASIC":
+        raise ValueError("enable_total_metrics is only supported for BASIC reports")
     if enable_total_metrics:
         params['enable_total_metrics'] = enable_total_metrics
     
@@ -98,10 +125,7 @@ async def get_reports(client, advertiser_id: str | None = None, advertiser_ids: 
         "total_metrics": data.get("total_metrics"),
         "page_info": data.get("page_info", {}),
         "list": [
-            {
-                "dimensions": item.get("dimensions", {}),
-                "metrics": item.get("metrics", {})
-            }
+            {**item, "dimensions": item.get("dimensions", {}), "metrics": item.get("metrics", {})}
             for item in data.get("list", [])
         ]
     }

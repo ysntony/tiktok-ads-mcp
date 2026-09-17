@@ -125,7 +125,7 @@ This MCP server provides **read-only** access to the TikTok Business API:
 - Playable ads reports
 - DSA (Dynamic Search Ads) reports
 - Business Center reports
-- GMV max ads reports
+- Legacy GMV max ads reports are rejected by the server because TikTok is deprecating `TT_SHOP`; use the dedicated GMV Max report endpoint when adding GMV Max support.
 
 ## Key Features
 

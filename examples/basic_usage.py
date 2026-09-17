@@ -5,7 +5,6 @@ This example shows how to run the TikTok Ads MCP server directly from the source
 without needing to install the package first. This is useful for development and testing.
 """
 
-import asyncio
 import sys
 import os
 
@@ -19,15 +18,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tiktok_ads_mcp.server import main
 
 if __name__ == "__main__":
-    print("🚀 Starting TikTok Ads MCP Server from example script...")
-    print("📖 For production, install the package and use the 'tiktok-ads-mcp' command.")
-    print("⚠️  Make sure your .env file is configured in the project root.")
-    print()
-
     try:
-        asyncio.run(main())
+        main()
     except KeyboardInterrupt:
-        print("\n🛑 Server stopped by user")
+        print("Server stopped by user", file=sys.stderr)
     except Exception as e:
-        print(f"❌ Server failed to start: {e}")
+        print(f"Server failed to start: {e}", file=sys.stderr)
         sys.exit(1)
