@@ -1,15 +1,15 @@
 # TikTok Ads MCP
 
-A comprehensive Model Context Protocol (MCP) server for interacting with the TikTok Business API. This package provides a complete interface to access TikTok advertising campaigns, ad groups, ads, and generate detailed performance reports.
+A read-only Model Context Protocol (MCP) server for retrieving TikTok advertising accounts, campaigns, ad groups, ads, and performance reports.
 
 ## Features
 
 - **Read-Only TikTok Business API Integration**: Access all major TikTok advertising endpoints for data retrieval
-- **6 Comprehensive Tools**: Business centers, ad accounts, campaigns, ad groups, ads, and reports
-- **Advanced Filtering**: Powerful filtering options for all data retrieval operations
+- **6 Read-Only Tools**: Business centers, ad accounts, campaigns, ad groups, ads, and reports
+- **API-aligned Filtering**: Filtering and pagination for campaigns, ad groups, ads, and reports
 - **Multi-Advertiser Support**: Handle multiple advertiser accounts in a single request
 - **Flexible Reporting**: Generate detailed performance reports with custom dimensions and metrics
-- **Real-time Data**: Access live advertising data and performance metrics
+- **Current Data**: Retrieve current advertising data and performance metrics
 - **Error Handling**: Comprehensive error handling and validation
 - **Modular Architecture**: Clean, maintainable code structure
 - **Safe Operations**: All tools are read-only and will not modify your campaigns or ad data
@@ -18,10 +18,10 @@ A comprehensive Model Context Protocol (MCP) server for interacting with the Tik
 
 1. **get_business_centers** - Retrieve business centers accessible by your access token
 2. **get_authorized_ad_accounts** - Get all authorized advertiser accounts
-3. **get_campaigns** - Retrieve campaigns with comprehensive filtering options
-4. **get_ad_groups** - Get ad groups with advanced filtering and targeting options
-5. **get_ads** - Retrieve ads with detailed creative and performance data
-6. **get_reports** - Generate comprehensive performance reports and analytics
+3. **get_campaigns** - Retrieve campaigns with filtering and pagination
+4. **get_ad_groups** - Retrieve ad groups with filtering and pagination
+5. **get_ads** - Retrieve ads with filtering and pagination
+6. **get_reports** - Generate performance reports and analytics
 
 ## Prerequisites
 
@@ -94,7 +94,7 @@ Once configured, you can use the MCP tools through your MCP client (like Cursor,
 - **Access ad groups** with advanced targeting and optimization settings
 - **View ads** with detailed creative and performance data
 - **Generate reports** with custom dimensions, metrics, and time ranges
-- **Access real-time advertising data** and performance metrics
+- **Access current advertising data** and performance metrics
 
 ## API Coverage
 
@@ -125,16 +125,17 @@ This MCP server provides **read-only** access to the TikTok Business API:
 - Playable ads reports
 - DSA (Dynamic Search Ads) reports
 - Business Center reports
-- Legacy GMV max ads reports are rejected by the server because TikTok is deprecating `TT_SHOP`; use the dedicated GMV Max report endpoint when adding GMV Max support.
+- Legacy GMV Max reports (`TT_SHOP`) are not supported because TikTok is deprecating that report type; use the dedicated GMV Max report endpoint when adding GMV Max support.
 
 ## Key Features
 
-### Advanced Filtering
-All tools support comprehensive filtering options:
+### Filtering and pagination
+Supported data tools expose API-aligned filters and pagination:
 - Status-based filtering (active, paused, deleted)
 - Time-based filtering (creation date, modification date)
-- Performance-based filtering (budget, optimization goals)
-- Creative filtering (ad formats, material types)
+- Campaign, ad group, and ad identifiers
+- Objective, optimization, placement, and creative filters where supported by TikTok
+- Page number and page size, with `page_info` returned for paginated endpoints
 
 ### Modern Implementation
 This package uses the FastMCP framework for optimal performance and developer experience:
@@ -189,7 +190,16 @@ For issues and questions:
 
 ## Changelog
 
-### v0.1.4 (Current)
+### v0.1.5 (Current)
+- **Protocol safety**: Startup and error messages no longer pollute MCP stdio output.
+- **Security**: Access tokens and OAuth secrets are redacted from debug logs.
+- **Campaign queries**: Campaign filters now use TikTok v1.3's `filtering` object and support pagination.
+- **Response compatibility**: List tools preserve newly added TikTok fields and return pagination metadata.
+- **Reporting validation**: Unsupported report combinations are rejected early; deprecated `TT_SHOP` reports are blocked.
+- **Configuration**: `.env` files are loaded automatically.
+- **Example startup**: Fixed the example entry point to call the synchronous server correctly.
+
+### v0.1.4
 - **Retry Logic Fix**: Fixed retry decorator being defeated by inner exception handling — retries now actually fire on rate limits and transient errors
 - **Pagination Fix**: `page` and `page_size` params now properly passed through to `get_ad_groups` and `get_ads` API calls
 - **Security**: Access token redacted from debug log output
